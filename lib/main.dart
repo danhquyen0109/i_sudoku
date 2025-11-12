@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_layout_grid/flutter_layout_grid.dart';
 import 'package:get/get.dart';
 import 'package:i_sudoku/models/cell.dart';
+import 'package:i_sudoku/purchase/purchase_screen.dart';
 import 'package:i_sudoku/sudoku_controller.dart';
 import 'package:i_sudoku/themes/c_colors.dart';
 import 'package:i_sudoku/themes/c_textstyle.dart';
@@ -66,10 +67,26 @@ class MyHomePage extends StatelessWidget {
             ),
           ),
 
+          leading: Obx(
+            () => Badge(
+              label: CText(
+                '${controller.availableHints.value}',
+                style: CTextStyles.base.s18.w600().setColor(CColors.inkA500),
+              ),
+              backgroundColor: CColors.greenA100,
+              offset: Offset(0, 8),
+              child: IconButton(
+                padding: EdgeInsets.only(left: 16),
+                onPressed: controller.hintTapped,
+                icon: Image.asset('assets/icons/light-bulb.png'),
+              ),
+            ),
+          ),
+
           actions: [
             IconButton(
-              onPressed: controller.hintTapped,
-              icon: Image.asset('assets/icons/light-bulb.png'),
+              onPressed: () => Get.to(() => const PurchaseScreen()),
+              icon: Icon(Icons.shopping_cart_rounded, color: CColors.inkA500),
             ),
             SizedBox(width: 16),
           ],

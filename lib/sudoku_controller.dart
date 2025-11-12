@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:i_sudoku/models/cell.dart';
+import 'package:i_sudoku/purchase/purchase_screen.dart';
 import 'package:sudoku_dart/sudoku_dart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class SudokuController extends GetxController {
@@ -17,11 +19,14 @@ class SudokuController extends GetxController {
     9,
     (row) => List.generate(9, (col) => Cell(row: row, column: col)),
   );
+  final availableHints = 0.obs; // Default hints
+  static const _hintsKey = 'available_hints';
 
   @override
   void onInit() {
     super.onInit();
     cells = boardData.expand((e) => e).toList().obs;
+    _loadHints();
     onNewGame();
   }
 
@@ -75,9 +80,38 @@ class SudokuController extends GetxController {
   }
 
   void hintTapped() {
+    if (availableHints.value <= 0) {
+      Get.dialog(
+        AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text('Out of Hints'),
+          content: const Text(
+            'You have no hints left. Would you like to get more?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back();
+                Get.to(() => const PurchaseScreen());
+              },
+              child: const Text('Get More'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final cell = currentCell.value;
     if (cell == null) return;
     if (cell.canEdit != true) return;
+
     final sol = cell.solution;
     if (sol == -1) return;
 
@@ -91,6 +125,7 @@ class SudokuController extends GetxController {
       cells[index] = cells[index].copyWith(value: sol, canEdit: false);
     }
 
+    _useHint();
     update();
     _maybeValidateBoard();
   }
@@ -184,5 +219,22 @@ class SudokuController extends GetxController {
   void onClose() {
     _stopTimer();
     super.onClose();
+  }
+
+  Future<void> _loadHints() async {
+    final prefs = await SharedPreferences.getInstance();
+    availableHints.value = prefs.getInt(_hintsKey) ?? 0;
+  }
+
+  Future<void> _saveHints(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_hintsKey, value);
+  }
+
+  void _useHint() => _saveHints.call(availableHints.value--);
+
+  Future<void> addHints(int amount) async {
+    availableHints.value += amount;
+    await _saveHints(availableHints.value);
   }
 }
